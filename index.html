@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<!--<html lang="en">-->
+
+<head>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider/distribute/nouislider.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/nouislider/distribute/nouislider.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+	
+    <style>
+        html,
+        body {
+            height: 100%;
+        }
+
+        #event-display {
+            background-color: #f3f4f6;
+            /* 浅灰色背景 */
+            border-radius: 10px;
+            margin-right: 10px;
+        }
+
+        
+
+        #relation-display {
+
+            /* 容器宽度 */
+            border: 1px solid #ccc;
+            /* 边框，增加可视化效果 */
+            border-radius: 10px;
+        }
+
+        #map {
+            height: 35%;
+            /* 调整地图的高度，为时间展示区留出空间 */
+            margin-bottom: 10px;
+            border-bottom-left-radius: 10px;
+            /* 左上角 */
+            border-bottom-right-radius: 10px;
+            /* 右上角 */
+            margin-right: 10px;
+        }
+
+        #display-area {
+            height: 65%;
+            /* 分配给事件展示区的高度 */
+
+            border-radius: 10px;
+            margin-right: 10px;
+            /*	  border-top: 2px solid #ccc;  顶部边框线，增加分隔感 */
+			
+            /*与地图形成间隔*/
+        }
+
+        #title {
+            margin-top: 10px;
+            border-top-left-radius: 10px;
+            /* 左上角 */
+            border-top-right-radius: 10px;
+            /* 右上角 */
+            margin-right: 10px;
+        }
+
+        .sidebar {
+            height: 106%;
+            overflow: auto;
+            margin-top: 10px;
+            border-radius: 10px;
+        }
+
+        .sidebar .block {
+            border-bottom: 1px solid #ccc;
+        }
+
+        .sidebar .block-toggle {
+            cursor: pointer;
+            padding: 10px;
+            font-weight: bold;
+        }
+
+        .sidebar .block-content {
+            padding: 10px;
+        }
+
+        .province-hover {
+            fill: #ff0000;
+            fill-opacity: 0.5;
+        }
+    </style>
+</head>
+
+<body class="flex flex-col h-full">
+    <div class="flex flex-grow space-x-2 h-full">
+        <div class="w-1/5 p-4 bg-gray-100 sidebar">
+            <div class="block">
+                <div class="block-toggle">事件类型 <i class="fas fa-caret-down"></i></div>
+                <div class="block-content">
+
+                </div>
+            </div>
+            <div class="block">
+                <div class="block-toggle">人物 <i class="fas fa-caret-down"></i></div>
+                <div class="block-content">
+
+                </div>
+            </div>
+            <div class="block">
+                <div class="block-toggle">地点 <i class="fas fa-caret-down"></i></div>
+                <div class="block-content">
+
+                </div>
+            </div>
+
+            <div id="time-range-slider"></div>
+            <div class="p-4 py-8">
+                <p>
+                    时间范围 ：
+                    <input type="text" class="w-20" id="input-start-year" /> -
+                    <input type="text" class="w-20" id="input-end-year" />
+                <div class="py-8 ">
+                    <button id="update-range-btn"
+                        class="bg-violet-500 hover:bg-violet-600 active:bg-violet-700 focus:ring focus:ring-violet-300 rounded-md py-2 px-4 text-white font-semibold shadow-md">Query</button>
+                </div>
+
+                </p>
+            </div>
+
+        </div>
+        <div class="w-4/5 h-full" id="view">
+            <div class="flex items-center justify-between bg-gray-800 text-white p-4" id="title">
+                <h1 class="text-2xl font-bold">伍尔夫大事记可视化交互系统</h1>
+                <div>使用说明 关于我们</div>
+            </div>
+            <div id="map"></div>
+            <div class="flex" id="display-area">
+                <!-- 事件展示区 -->
+                <div class="w-1/2 p-4 h-full overflow-y-auto" id="event-display">
+                    <h2 class="text-lg font-bold">事件</h2>
+                    <div class="p-4 overflow-y-auto" id="event-details">
+<!--                         事件展示容器 -->
+                    </div>
+                </div>
+                <!-- 人物关系图展示区 -->
+                <div class="w-1/2 p-4 h-full overflow-y-auto" id="relation-display">
+                    <h2 class="text-lg font-bold">人物关系图</h2>
+                    <!-- 人物关系图的容器 -->
+                    <div id="relationGraph" ></div>
+
+                </div>
+            </div>
+        </div>
+	</div>
+</body>
+<script>
+    // 假设JSON文件已上传到服务器，并且可以通过下面的URLs访问
+    var urls = {
+        '伍尔夫大事记': 'data/wolff_events.json', // 将路径替换为实际的URL路径
+        '英国俄罗斯热': 'data/russian_fever_events.json' // 同上
+    };
+
+    // 加载和显示事件的函数
+    function loadAndDisplayEvents() {
+        // 清空之前的事件显示
+        $('#event-details').html('');
+        
+        // 确定用户选择的事件类型
+        var eventType = $('input[type="checkbox"]:checked').map(function() {
+            return $(this).val();
+        }).get();
+
+        var startYear = parseInt($('#input-start-year').val(), 10);
+        var endYear = parseInt($('#input-end-year').val(), 10);
+
+        // 遍历用户选择的每种事件类型
+        eventType.forEach(function(type) {
+            if (urls[type]) {
+                $.getJSON(urls[type], function(events) {
+                    // 过滤符合年份的事件
+                    var filteredEvents = events.filter(function(event) {
+                        return event.年份 >= startYear && event.年份 <= endYear;
+                    });
+                    // 显示事件
+                    filteredEvents.forEach(function(event) {
+                        var impactText = event.影响 ? `<p class="tracking-wide
+text-base leading-relaxed">影响: ${event.影响}</p>` : '';
+                        var eventHtml = `<div class="mb-4"><h4 class="tracking-wide
+ font-bold font-serif mb-2">${event.年份}: ${event.事件}</h4>${impactText}</div>`;
+                        $('#event-details').append(eventHtml);
+                    });
+                });
+            }
+        });
+    }
+
+    // 绑定按钮点击事件来加载和显示事件
+    $('#update-range-btn').click(loadAndDisplayEvents);
+</script>
+<script src="js/map.js"></script>
+<script>
+	// 读取可选项
+    $(document).ready(function () {
+        // 使用jQuery的getJSON方法读取JSON文件
+        $.getJSON('data/choice.json', function (data) {
+            // 为“事件类型”动态创建checkbox
+            data['事件类型'].forEach(function (item) {
+                var checkbox = `<label><input type="checkbox" checked value="${item}"> ${item} </label><br/>`;
+                $('.block-content').eq(0).append(checkbox); // 假设第一个block-content是事件类型
+            });
+
+            // 为“人物”动态创建checkbox
+            data['人物'].forEach(function (item) {
+                var checkbox = `<label><input type="checkbox" checked value="${item}"> ${item} </label>`;
+                $('.block-content').eq(1).append(checkbox); // 假设第二个block-content是人物
+            });
+
+            // 为“地点”动态创建checkbox
+            data['地点'].forEach(function (item) {
+                var checkbox = `<label><input type="checkbox" checked value="${item}"> ${item} </label>`;
+                $('.block-content').eq(2).append(checkbox); // 假设第三个block-content是地理轨迹
+            });
+        });
+    });
+</script>
+<script>
+
+    // slider logics
+    var slider = document.getElementById('time-range-slider');
+    var inputStartYear = document.getElementById('input-start-year');
+    var inputEndYear = document.getElementById('input-end-year');
+    var updateRangeBtn = document.getElementById('update-range-btn');
+    noUiSlider.create(slider, {
+        start: [1870, 1970], // 默认选择的范围，确保它是有效的
+        connect: true,
+        range: {
+            'min': 1850,
+            'max': 1990
+        },
+        format: {
+            to: function (value) {
+                return value.toFixed(0);
+            },
+            from: function (value) {
+                return Number(value);
+            }
+        }
+    });
+
+    function updateYearDisplays(values) {
+        var startYear = values[0];
+        var endYear = values[1];
+        // 只在年份确实改变时更新显示
+        if (startYearOutput.innerHTML != startYear.toString()) {
+            startYearOutput.innerHTML = startYear;
+        }
+        if (endYearOutput.innerHTML != endYear.toString()) {
+            endYearOutput.innerHTML = endYear;
+        }
+    }
+    var inputStartYear = document.getElementById('input-start-year');
+    var inputEndYear = document.getElementById('input-end-year');
+
+    function setSliderFromInput() {
+        var startYear = parseInt(inputStartYear.value, 10);
+        var endYear = parseInt(inputEndYear.value, 10);
+        // 确保输入的年份在滑块允许的范围内
+        if (!isNaN(startYear) && !isNaN(endYear) && startYear >= 1850 && endYear <= 1990 && startYear <= endYear) {
+            slider.noUiSlider.set([startYear, endYear]);
+        } else {
+            alert("Please enter valid years within the range 1880 to 1990.");
+        }
+    }
+    updateRangeBtn.addEventListener('click', setSliderFromInput);
+    slider.noUiSlider.on('update', function (values, handle) {
+        inputStartYear.value = values[0];
+        inputEndYear.value = values[1];
+    });
+</script>
+
+<!--</html>-->

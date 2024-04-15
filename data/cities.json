@@ -1,0 +1,82 @@
+[
+    {
+      "name": "北京",
+      "nameEn": "Beijing",
+      "lat": 39.9042,
+      "lng": 116.4074,
+      "tier": "一线",
+      "region": "华北"
+    },
+    {
+      "name": "上海",
+      "nameEn": "Shanghai",
+      "lat": 31.2304,
+      "lng": 121.4737,
+      "tier": "一线",
+      "region": "华东"
+    },
+    {
+      "name": "广州",
+      "nameEn": "Guangzhou",
+      "lat": 23.1291,
+      "lng": 113.2644,
+      "tier": "一线",
+      "region": "华南"
+    },
+    {
+      "name": "深圳",
+      "nameEn": "Shenzhen",
+      "lat": 22.5431,
+      "lng": 114.0579,
+      "tier": "一线",
+      "region": "华南"
+    },
+    {
+      "name": "杭州",
+      "nameEn": "Hangzhou",
+      "lat": 30.2741,
+      "lng": 120.1551,
+      "tier": "二线",
+      "region": "华东"
+    },
+    {
+      "name": "南京",
+      "nameEn": "Nanjing",
+      "lat": 32.0603,
+      "lng": 118.7969,
+      "tier": "二线",
+      "region": "华东"
+    },
+    {
+      "name": "成都",
+      "nameEn": "Chengdu",
+      "lat": 30.5728,
+      "lng": 104.0668,
+      "tier": "二线",
+      "region": "西南"
+    },
+    {
+      "name": "重庆",
+      "nameEn": "Chongqing",
+      "lat": 29.4316,
+      "lng": 106.9123,
+      "tier": "二线",
+      "region": "西南"
+    },
+    {
+      "name": "武汉",
+      "nameEn": "Wuhan",
+      "lat": 30.5928,
+      "lng": 114.3055,
+      "tier": "二线",
+      "region": "华中"
+    },
+    {
+      "name": "西安",
+      "nameEn": "Xi'an",
+      "lat": 34.3416,
+      "lng": 108.9398,
+      "tier": "二线",
+      "region": "西北"
+    }
+]
