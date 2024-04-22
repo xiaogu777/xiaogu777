@@ -1,7 +1,5 @@
 <!DOCTYPE html>
-<!--<html lang="en">-->
-
-<head>
+<!--<html lang="en">--><head>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -10,6 +8,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider/distribute/nouislider.min.css">
     <script src="https://cdn.jsdelivr.net/npm/nouislider/distribute/nouislider.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+	<link href="https://unpkg.com/vis-network/standalone/umd/vis-network.min.css" rel="stylesheet" type="text/css" />
+	<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+
 	
     <style>
         html,
@@ -90,8 +92,39 @@
             fill: #ff0000;
             fill-opacity: 0.5;
         }
+		.legend div {
+			display: flex;
+			align-items: center; /* Vertically align text and color blocks */
+		}
+
+		.legend span {
+			display: inline-block;
+			vertical-align: middle;
+		}
     </style>
+<!--
+	<style>
+		.vis-tooltip {
+			bckground-color: #fff; /* 背景颜色 */
+			border: 1px solid #333; /* 边框 */
+			border-radius: 5px; /* 边框圆角 */
+			padding: 10px; /* 内边距 */
+			font-size: 14px; /* 文本大小 */
+			color: #333; /* 文本颜色 */
+		}
+	</style>
+-->
+
 </head>
+
+<!-- About Us Modal -->
+<div id="aboutModal" class="modal hidden">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('aboutModal')">&times;</span>
+        <h2>关于我们</h2>
+        <p>这里填写关于您的团队和项目的信息。</p>
+    </div>
+</div>
 
 <body class="flex flex-col h-full">
     <div class="flex flex-grow space-x-2 h-full">
@@ -103,17 +136,19 @@
                 </div>
             </div>
             <div class="block">
-                <div class="block-toggle">人物 <i class="fas fa-caret-down"></i></div>
+                <div class="block-toggle">人物关系 <i class="fas fa-caret-down"></i></div>
                 <div class="block-content">
 
                 </div>
             </div>
+<!--
             <div class="block">
                 <div class="block-toggle">地点 <i class="fas fa-caret-down"></i></div>
                 <div class="block-content">
 
                 </div>
             </div>
+-->
 
             <div id="time-range-slider"></div>
             <div class="p-4 py-8">
@@ -133,7 +168,9 @@
         <div class="w-4/5 h-full" id="view">
             <div class="flex items-center justify-between bg-gray-800 text-white p-4" id="title">
                 <h1 class="text-2xl font-bold">伍尔夫大事记可视化交互系统</h1>
-                <div>使用说明 关于我们</div>
+                <div>
+					使用说明 关于我们
+				</div>
             </div>
             <div id="map"></div>
             <div class="flex" id="display-area">
@@ -148,13 +185,38 @@
                 <div class="w-1/2 p-4 h-full overflow-y-auto" id="relation-display">
                     <h2 class="text-lg font-bold">人物关系图</h2>
                     <!-- 人物关系图的容器 -->
-                    <div id="relationGraph" ></div>
+<!--                    <div id="relationGraph" >-->
+					<div class="legend" style="padding: 10px; display: flex; align-items: center; justify-content: center; gap: 20px;">
+						<div>
+							<span style="display: inline-block; width: 20px; height: 20px; background-color: #FF9999;"></span>
+							<span style="margin-left: 5px;">第一代（祖父母）</span>
+						</div>
+						<div>
+							<span style="display: inline-block; width: 20px; height: 20px; background-color: #99CCFF;"></span>
+							<span style="margin-left: 5px;">第二代（父母）</span>
+						</div>
+						<div>
+							<span style="display: inline-block; width: 20px; height: 20px; background-color: #99FF99;"></span>
+							<span style="margin-left: 5px;">第三代（子女）</span>
+						</div>
+						<div>
+							<span style="display: inline-block; width: 20px; height: 20px; background-color: #9955BB;"></span>
+							<span style="margin-left: 5px;">朋友</span>
+						</div>
+					</div>
+					<div id="network" style="width: 100%; height: 85%; border: 1px solid lightgray">
+					
+					</div>
+
+<!--					</div>-->
 
                 </div>
             </div>
         </div>
 	</div>
 </body>
+
+<script src="js/relation.js"></script>
 <script>
     // 假设JSON文件已上传到服务器，并且可以通过下面的URLs访问
     var urls = {
@@ -213,7 +275,7 @@ text-base leading-relaxed">影响: ${event.影响}</p>` : '';
 
             // 为“人物”动态创建checkbox
             data['人物'].forEach(function (item) {
-                var checkbox = `<label><input type="checkbox" checked value="${item}"> ${item} </label>`;
+                var checkbox = `<label><input type="radio" name="relationship" value="${item}"> ${item} </label><br/>`;
                 $('.block-content').eq(1).append(checkbox); // 假设第二个block-content是人物
             });
 
@@ -270,7 +332,7 @@ text-base leading-relaxed">影响: ${event.影响}</p>` : '';
         if (!isNaN(startYear) && !isNaN(endYear) && startYear >= 1850 && endYear <= 1990 && startYear <= endYear) {
             slider.noUiSlider.set([startYear, endYear]);
         } else {
-            alert("Please enter valid years within the range 1880 to 1990.");
+            alert("Please enter valid years within the range 1850 to 1990.");
         }
     }
     updateRangeBtn.addEventListener('click', setSliderFromInput);

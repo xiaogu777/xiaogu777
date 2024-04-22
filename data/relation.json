@@ -1,0 +1,11 @@
+{
+  "nodes": [
+    {"id": "1", "name": "Alice", "generation": 1},
+    {"id": "2", "name": "Bob", "generation": 2},
+    {"id": "3", "name": "Carol", "generation": 3}
+  ],
+  "links": [
+    {"source": "1", "target": "2", "relation": "parent"},
+    {"source": "2", "target": "3", "relation": "parent"}
+  ]
+}
